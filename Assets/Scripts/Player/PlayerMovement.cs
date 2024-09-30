@@ -9,17 +9,19 @@ using static UnityEditor.Timeline.TimelinePlaybackControls;
 public class PlayerMovement : MonoBehaviour
 {
     public float MoveSpeed = 2.0f;
+    public float RotationSpeed = 7;
 
     private PlayerInput playerInput;
     private InputAction moveController;
     private CharacterController cc;
     private Vector3 MoveVector;
     private Vector2 testVector;
+    private Quaternion initialRotation;
 
     void OnEnable()
     {
         cc = GetComponent<CharacterController>();
-
+        initialRotation = this.gameObject.transform.rotation;
         playerInput = GetComponent<PlayerInput>();
         playerInput.ActivateInput();
 
@@ -32,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
         UpdateMovement();
         UpdateRotation();
         cc.Move(MoveVector * MoveSpeed);
+        
     }
 
     void UpdateMovement()
@@ -40,15 +43,21 @@ public class PlayerMovement : MonoBehaviour
         print(playerInputVector);
         MoveVector.x = playerInputVector.x;
         MoveVector.z = playerInputVector.y;
-        MoveVector.y = 0;
+        if (!cc.isGrounded)
+        {
+            MoveVector.y -= .98f;
+        }
     }
 
     void UpdateRotation()
     {
         if (MoveVector.x != 0 || MoveVector.z != 0)
         {
-            transform.LookAt(transform.position + MoveVector);
+            Quaternion targetRotation = Quaternion.LookRotation(MoveVector, Vector3.up);
+
+            this.transform.rotation = Quaternion.RotateTowards(this.transform.rotation, targetRotation, RotationSpeed * 100);
+            this.transform.rotation = Quaternion.Euler(initialRotation.eulerAngles.x, transform.rotation.eulerAngles.y, initialRotation.eulerAngles.z);
+
         }
     }
-
 }
