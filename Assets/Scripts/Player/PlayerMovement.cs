@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 MoveVector;
     private Vector2 testVector;
     private Quaternion initialRotation;
+    private Quaternion targetRotation;
 
     void OnEnable()
     {
@@ -34,18 +35,19 @@ public class PlayerMovement : MonoBehaviour
         UpdateMovement();
         UpdateRotation();
         cc.Move(MoveVector * MoveSpeed);
-        
+        // Draw ray in players current forward rotation
+        Debug.DrawRay(this.transform.position, this.transform.forward * 3f,Color.green, 0);
     }
 
     void UpdateMovement()
     {
         Vector3 playerInputVector = moveController.ReadValue<Vector2>();
-        print(playerInputVector);
         MoveVector.x = playerInputVector.x;
         MoveVector.z = playerInputVector.y;
+        // Apply Gravity only if player is not on ground
         if (!cc.isGrounded)
         {
-            MoveVector.y -= .98f;
+            MoveVector.y += (Globals.Gravity * Time.deltaTime);
         }
     }
 
@@ -53,11 +55,20 @@ public class PlayerMovement : MonoBehaviour
     {
         if (MoveVector.x != 0 || MoveVector.z != 0)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(MoveVector, Vector3.up);
-
-            this.transform.rotation = Quaternion.RotateTowards(this.transform.rotation, targetRotation, RotationSpeed * 100);
+            this.targetRotation= Quaternion.LookRotation(MoveVector, Vector3.up);
+            // Lerps towards target rotation so that the player rotates smoothly
+            this.transform.rotation = Quaternion.RotateTowards(this.transform.rotation, this.targetRotation, RotationSpeed * 10);
             this.transform.rotation = Quaternion.Euler(initialRotation.eulerAngles.x, transform.rotation.eulerAngles.y, initialRotation.eulerAngles.z);
 
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        // Draws the target rotation as a point in space 
+        Vector3 targetPosLocal = this.targetRotation * Vector3.forward;
+        targetPosLocal.y = 0;
+        Gizmos.DrawSphere(this.transform.position + (targetPosLocal * 30f), .5f);
     }
 }
